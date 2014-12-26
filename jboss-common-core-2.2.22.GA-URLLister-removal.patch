@@ -1,0 +1,644 @@
+From 36cfc148eb48bc06a9642e7b1ceec7ab32bf1942 Mon Sep 17 00:00:00 2001
+From: Marek Goldmann <marek.goldmann@gmail.com>
+Date: Tue, 1 Jul 2014 11:11:56 +0200
+Subject: [PATCH] URLLister removal patch
+
+---
+ pom.xml                                            |  20 +--
+ .../java/org/jboss/net/protocol/URLLister.java     |  89 -----------
+ .../java/org/jboss/net/protocol/URLListerBase.java |  97 ------------
+ .../org/jboss/net/protocol/URLListerFactory.java   |  89 -----------
+ .../org/jboss/net/protocol/file/FileURLLister.java | 168 ---------------------
+ .../org/jboss/net/protocol/http/DavURLLister.java  | 115 --------------
+ 6 files changed, 2 insertions(+), 576 deletions(-)
+ delete mode 100644 src/main/java/org/jboss/net/protocol/URLLister.java
+ delete mode 100644 src/main/java/org/jboss/net/protocol/URLListerBase.java
+ delete mode 100644 src/main/java/org/jboss/net/protocol/URLListerFactory.java
+ delete mode 100644 src/main/java/org/jboss/net/protocol/file/FileURLLister.java
+ delete mode 100644 src/main/java/org/jboss/net/protocol/http/DavURLLister.java
+
+diff --git a/pom.xml b/pom.xml
+index c0f3aa7..388b6db 100644
+--- a/pom.xml
++++ b/pom.xml
+@@ -103,27 +103,11 @@
+   </profiles>
+   
+   <dependencies>
+-  
+-    <dependency>
+-      <groupId>commons-httpclient</groupId>
+-      <artifactId>commons-httpclient</artifactId>
+-      <version>2.0.2</version>
+-      <scope>compile</scope>
+-      <optional>true</optional> <!-- org.jboss.net.protocol.http.DavURLLister -->
+-    </dependency>
+-    
+-    <dependency>
+-      <groupId>slide</groupId>
+-      <artifactId>webdavlib</artifactId>
+-      <version>2.0</version>
+-      <scope>compile</scope>
+-      <optional>true</optional> <!-- org.jboss.net.protocol.http.DavURLLister -->
+-    </dependency>
+ 
+     <dependency>
+       <groupId>org.jboss.logging</groupId>
+-      <artifactId>jboss-logging-spi</artifactId>
+-      <version>2.1.0.GA</version>
++      <artifactId>jboss-logging</artifactId>
++      <version>3.0.0.GA</version>
+       <scope>compile</scope>
+     </dependency>
+     
+diff --git a/src/main/java/org/jboss/net/protocol/URLLister.java b/src/main/java/org/jboss/net/protocol/URLLister.java
+deleted file mode 100644
+index 8467cea..0000000
+--- a/src/main/java/org/jboss/net/protocol/URLLister.java
++++ /dev/null
+@@ -1,89 +0,0 @@
+-/*
+-  * JBoss, Home of Professional Open Source
+-  * Copyright 2005, JBoss Inc., and individual contributors as indicated
+-  * by the @authors tag. See the copyright.txt in the distribution for a
+-  * full listing of individual contributors.
+-  *
+-  * This is free software; you can redistribute it and/or modify it
+-  * under the terms of the GNU Lesser General Public License as
+-  * published by the Free Software Foundation; either version 2.1 of
+-  * the License, or (at your option) any later version.
+-  *
+-  * This software is distributed in the hope that it will be useful,
+-  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+-  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+-  * Lesser General Public License for more details.
+-  *
+-  * You should have received a copy of the GNU Lesser General Public
+-  * License along with this software; if not, write to the Free
+-  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+-  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+-  */
+-package org.jboss.net.protocol;
+-
+-import java.io.IOException;
+-import java.net.URL;
+-import java.util.Collection;
+-
+-/**
+- * Interface defining methods that can be used to list the contents of a URL
+- * collection irrespective of the protocol.
+- */
+-@SuppressWarnings("unchecked")
+-public interface URLLister {
+-   /**
+-    * List the members of the given collection URL that match the patterns
+-    * supplied and, if it contains directory that contains NO dot in the name and
+-    * scanNonDottedSubDirs is true, recursively finds URL in these directories.
+-    * @param baseUrl the URL to list; must end in "/"
+-    * @param patterns the patterns to match (separated by ',')
+-    * @param scanNonDottedSubDirs enables recursive search for directories containing no dots
+-    * @return a Collection of URLs that match
+-    * @throws IOException if there was a problem getting the list
+-    */
+-   Collection listMembers(URL baseUrl, String patterns, boolean scanNonDottedSubDirs) throws IOException;
+-   
+-   /**
+-    * List the members of the given collection URL that match the patterns
+-    * supplied. Doesn't recursively list files contained in directories.
+-    * @param baseUrl the URL to list; must end in "/"
+-    * @param patterns the patterns to match (separated by ',')
+-    * @return a Collection of URLs that match
+-    * @throws IOException if there was a problem getting the list
+-    */
+-   Collection listMembers(URL baseUrl, String patterns) throws IOException;
+-
+-   /**
+-    * List the members of the given collection that are accepted by the filter
+-    * @param baseUrl the URL to list; must end in "/"
+-    * @param filter a filter that is called to determine if a member should
+-    *               be returned
+-    * @param scanNonDottedSubDirs enables recursive search for directories containing no dots
+-    * @return a Collection of URLs that match
+-    * @throws IOException if there was a problem getting the list
+-    */
+-   Collection listMembers(URL baseUrl, URLFilter filter, boolean scanNonDottedSubDirs) throws IOException;
+-
+-   /**
+-    * List the members of the given collection that are accepted by the filter
+-    * @param baseUrl the URL to list; must end in "/"
+-    * @param filter a filter that is called to determine if a member should
+-    *               be returned
+-    * @return a Collection of URLs that match
+-    * @throws IOException if there was a problem getting the list
+-    */
+-   Collection listMembers(URL baseUrl, URLFilter filter) throws IOException;
+-
+-   /**
+-    * Interface defining a filter for listed members.
+-    */
+-   public interface URLFilter {
+-      /**
+-       * Determine whether the supplied memberName should be accepted
+-       * @param baseURL the URL of the collection
+-       * @param memberName the member of the collection
+-       * @return true to accept
+-       */
+-      boolean accept(URL baseURL, String memberName);
+-   }
+-}
+diff --git a/src/main/java/org/jboss/net/protocol/URLListerBase.java b/src/main/java/org/jboss/net/protocol/URLListerBase.java
+deleted file mode 100644
+index b9ed963..0000000
+--- a/src/main/java/org/jboss/net/protocol/URLListerBase.java
++++ /dev/null
+@@ -1,97 +0,0 @@
+-/*
+-  * JBoss, Home of Professional Open Source
+-  * Copyright 2005, JBoss Inc., and individual contributors as indicated
+-  * by the @authors tag. See the copyright.txt in the distribution for a
+-  * full listing of individual contributors.
+-  *
+-  * This is free software; you can redistribute it and/or modify it
+-  * under the terms of the GNU Lesser General Public License as
+-  * published by the Free Software Foundation; either version 2.1 of
+-  * the License, or (at your option) any later version.
+-  *
+-  * This software is distributed in the hope that it will be useful,
+-  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+-  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+-  * Lesser General Public License for more details.
+-  *
+-  * You should have received a copy of the GNU Lesser General Public
+-  * License along with this software; if not, write to the Free
+-  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+-  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+-  */
+-package org.jboss.net.protocol;
+-
+-import java.util.Arrays;
+-import java.util.HashSet;
+-import java.util.Collection;
+-import java.util.StringTokenizer;
+-import java.net.URL;
+-import java.io.IOException;
+-
+-/**
+- * Support class for URLLister's providing protocol independent functionality.
+- *
+- * @author Scott.Stark@jboss.org
+- * @version $Revision: 2787 $
+- */
+-@SuppressWarnings("unchecked")
+-public abstract class URLListerBase implements URLLister
+-{
+-   public Collection listMembers (URL baseUrl, String patterns,
+-      boolean scanNonDottedSubDirs) throws IOException
+-   {
+-      // @todo, externalize the separator?
+-      StringTokenizer tokens = new StringTokenizer (patterns, ",");
+-      String[] members = new String[tokens.countTokens ()];
+-      for (int i=0; tokens.hasMoreTokens (); i++)
+-      {
+-         String token = tokens.nextToken ();
+-         // Trim leading/trailing spaces as its unlikely they are meaningful
+-         members[i] = token.trim();
+-      }
+-      URLFilter filter = new URLFilterImpl (members);
+-      return listMembers (baseUrl, filter, scanNonDottedSubDirs);
+-   }
+-
+-   public Collection listMembers (URL baseUrl, String patterns) throws IOException
+-   {
+-      return listMembers (baseUrl, patterns, false);
+-   }
+-   
+-   /**
+-    * Inner class representing Filter criteria to be applied to the members
+-    * of the returned Collection
+-    */
+-   public static class URLFilterImpl implements URLFilter
+-   {
+-      protected boolean allowAll;
+-      protected HashSet constants;
+-      
+-      public URLFilterImpl (String[] patterns)
+-      {
+-         constants = new HashSet (Arrays.asList (patterns));
+-         allowAll = constants.contains ("*");
+-      }
+-      
+-      public boolean accept (URL baseUrl, String name)
+-      {
+-         if (allowAll)
+-         {
+-            return true;
+-         }
+-         if (constants.contains (name))
+-         {
+-            return true;
+-         }
+-         return false;
+-      }
+-   }
+-   
+-   protected static final URLFilter acceptAllFilter = new URLFilter ()
+-   {
+-      public boolean accept (URL baseURL, String memberName)
+-      {
+-         return true;
+-      }
+-   };
+-}
+diff --git a/src/main/java/org/jboss/net/protocol/URLListerFactory.java b/src/main/java/org/jboss/net/protocol/URLListerFactory.java
+deleted file mode 100644
+index edea79d..0000000
+--- a/src/main/java/org/jboss/net/protocol/URLListerFactory.java
++++ /dev/null
+@@ -1,89 +0,0 @@
+-/*
+-  * JBoss, Home of Professional Open Source
+-  * Copyright 2005, JBoss Inc., and individual contributors as indicated
+-  * by the @authors tag. See the copyright.txt in the distribution for a
+-  * full listing of individual contributors.
+-  *
+-  * This is free software; you can redistribute it and/or modify it
+-  * under the terms of the GNU Lesser General Public License as
+-  * published by the Free Software Foundation; either version 2.1 of
+-  * the License, or (at your option) any later version.
+-  *
+-  * This software is distributed in the hope that it will be useful,
+-  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+-  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+-  * Lesser General Public License for more details.
+-  *
+-  * You should have received a copy of the GNU Lesser General Public
+-  * License along with this software; if not, write to the Free
+-  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+-  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+-  */
+-package org.jboss.net.protocol;
+-
+-import java.net.URL;
+-import java.net.MalformedURLException;
+-import java.util.HashMap;
+-
+-@SuppressWarnings("unchecked")
+-public class URLListerFactory {
+-   private static HashMap defaultClasses = new HashMap();
+-   static {
+-      defaultClasses.put("file", "org.jboss.net.protocol.file.FileURLLister");
+-      defaultClasses.put("http", "org.jboss.net.protocol.http.DavURLLister");
+-      defaultClasses.put("https", "org.jboss.net.protocol.http.DavURLLister");
+-   }
+-
+-   private HashMap classes;
+-
+-   /**
+-    * Create a URLLister with default listers defined for file and http
+-    * protocols.
+-    */
+-   public URLListerFactory() {
+-      classes = (HashMap) defaultClasses.clone();
+-   }
+-
+-   /**
+-    * Create a URL lister using the protocol from the URL
+-    * @param url the url defining the protocol
+-    * @return a URLLister capable of listing URLs of that protocol
+-    * @throws MalformedURLException if no lister could be found for the protocol
+-    */
+-   public URLLister createURLLister(URL url) throws MalformedURLException  {
+-      return createURLLister(url.getProtocol());
+-   }
+-
+-   /**
+-    * Create a URL lister for the supplied protocol
+-    * @param protocol the protocol
+-    * @return a URLLister capable of listing URLs of that protocol
+-    * @throws MalformedURLException if no lister could be found for the protocol
+-    */
+-   public URLLister createURLLister(String protocol) throws MalformedURLException {
+-      try {
+-         String className = (String) classes.get(protocol);
+-         if (className == null) {
+-            throw new MalformedURLException("No lister class defined for protocol "+protocol);
+-         }
+-
+-         Class<?> clazz = Thread.currentThread().getContextClassLoader().loadClass(className);
+-         return (URLLister) clazz.newInstance();
+-      } catch (ClassNotFoundException e) {
+-         throw new MalformedURLException(e.getMessage());
+-      } catch (InstantiationException e) {
+-         throw new MalformedURLException(e.getMessage());
+-      } catch (IllegalAccessException e) {
+-         throw new MalformedURLException(e.getMessage());
+-      }
+-   }
+-
+-   /**
+-    * Register a URLLister class for a given protocol
+-    * @param protocol the protocol this class will handle
+-    * @param className the URLLister implementation to instanciate
+-    */
+-   public void registerListener(String protocol, String className) {
+-      classes.put(protocol, className);
+-   }
+-}
+diff --git a/src/main/java/org/jboss/net/protocol/file/FileURLLister.java b/src/main/java/org/jboss/net/protocol/file/FileURLLister.java
+deleted file mode 100644
+index b5296a8..0000000
+--- a/src/main/java/org/jboss/net/protocol/file/FileURLLister.java
++++ /dev/null
+@@ -1,168 +0,0 @@
+-/*
+- * JBoss, Home of Professional Open Source
+- * Copyright 2005, JBoss Inc., and individual contributors as indicated
+- * by the @authors tag. See the copyright.txt in the distribution for a
+- * full listing of individual contributors.
+- *
+- * This is free software; you can redistribute it and/or modify it
+- * under the terms of the GNU Lesser General Public License as
+- * published by the Free Software Foundation; either version 2.1 of
+- * the License, or (at your option) any later version.
+- *
+- * This software is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+- * Lesser General Public License for more details.
+- *
+- * You should have received a copy of the GNU Lesser General Public
+- * License along with this software; if not, write to the Free
+- * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+- * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+- */
+-package org.jboss.net.protocol.file;
+-
+-import java.io.File;
+-import java.io.FileNotFoundException;
+-import java.io.FilenameFilter;
+-import java.io.IOException;
+-import java.net.MalformedURLException;
+-import java.net.URL;
+-import java.util.ArrayList;
+-import java.util.Collection;
+-
+-import org.jboss.logging.Logger;
+-import org.jboss.net.protocol.URLListerBase;
+-
+-/**
+- * FileURLLister
+- *
+- * @author jboynes@users.sf.net
+- * @author <a href="mailto:dimitris@jboss.org">Dimitris Andreadis</a>
+- * @version $Revision: 2787 $
+- */
+-@SuppressWarnings("unchecked")
+-public class FileURLLister extends URLListerBase
+-{
+-   /** The Logger */
+-   private static final Logger log = Logger.getLogger(FileURLLister.class);
+-   
+-   // Public --------------------------------------------------------
+-   
+-   public Collection listMembers(URL baseUrl, URLFilter filter) throws IOException   
+-   {
+-      return listMembers(baseUrl, filter, false);
+-   }
+-
+-   public Collection<URL> listMembers(URL baseUrl, URLFilter filter, boolean scanNonDottedSubDirs) throws IOException
+-   {
+-      // Make sure this is a directory URL
+-      String baseUrlString = baseUrl.toString();
+-      if (!baseUrlString.endsWith("/"))
+-      {
+-         throw new IOException("Does not end with '/', not a directory url: " + baseUrlString);
+-      }
+-      
+-      // Verify the directory actually exists
+-      File dir = new File(baseUrl.getPath());
+-      if (!dir.isDirectory())
+-      {
+-         throw new FileNotFoundException("Not pointing to a directory, url: " + baseUrlString);
+-      }
+-      
+-      // The list of URLs to return
+-      ArrayList<URL> resultList = new ArrayList<URL>();
+-
+-      // Do the actual job
+-      listFiles(baseUrl, filter, scanNonDottedSubDirs, resultList);
+-      
+-      // Done
+-      return resultList;
+-   }
+-   
+-   // Private -------------------------------------------------------
+-   
+-   /**
+-    * Starting from baseUrl, that should point to a directory, populate the
+-    * resultList with the contents that pass the filter (in the form of URLs)
+-    * and possibly recurse into subdris not containing a '.' in their name.
+-    */
+-   private void listFiles(final URL baseUrl, final URLFilter filter, boolean scanNonDottedSubDirs, ArrayList<URL> resultList)
+-      throws IOException
+-   {      
+-      // List the files at the current dir level, using the provided filter
+-      final File baseDir = new File(baseUrl.getPath());
+-      String[] filenames = baseDir.list(new FilenameFilter()
+-      {
+-         public boolean accept(File dir, String name)
+-         {
+-            try
+-            {
+-               return filter.accept(baseUrl, name);
+-            }
+-            catch (Exception e)
+-            {
+-               log.debug("Unexpected exception filtering entry '" + name + "' in directory '" + baseDir + "'", e);
+-               return true;
+-            }
+-         }
+-      });
+-      
+-      if (filenames == null)
+-      {
+-         // This happens only when baseDir not a directory (but this is already
+-         // checked by the caller) or some unknown IOException happens internally
+-         // (e.g. run out of file descriptors?). Unfortunately the File API
+-         // doesn't provide a way to know.
+-         throw new IOException("Could not list directory '" + baseDir + "', reason unknown");
+-      }      
+-      else
+-      {
+-         String baseUrlString = baseUrl.toString();
+-         
+-         for (int i = 0; i < filenames.length; i++)
+-         {
+-            String filename = filenames[i];
+-            
+-            // Find out if this is a directory
+-            File file = new File(baseDir, filename);
+-            boolean isDir = file.isDirectory();
+-            
+-            // The subUrl
+-            URL subUrl = createURL(baseUrlString, filename, isDir);
+-            
+-            // If scanning subdirs and we have a directory, not containing a '.' in
+-            // the name, recurse into it. This is to allow recursing into grouping
+-            // dirs like ./deploy/jms, ./deploy/management, etc., avoiding
+-            // at the same time exploded packages, like .sar, .war, etc.
+-            if (scanNonDottedSubDirs && isDir && (filename.indexOf('.') == -1))
+-            {
+-               // recurse into it
+-               listFiles(subUrl, filter, scanNonDottedSubDirs, resultList);
+-            }
+-            else
+-            {
+-               // just add to the list
+-               resultList.add(subUrl);                
+-            }
+-         }
+-      }
+-   }  
+-   
+-   /**
+-    * Create a URL by concatenating the baseUrlString that should end at '/',
+-    * the filename, and a trailing slash, if it points to a directory
+-    */
+-   private URL createURL(String baseUrlString, String filename, boolean isDirectory)
+-   {
+-      try
+-      {
+-         return new URL(baseUrlString + filename + (isDirectory ? "/" : ""));
+-      } 
+-      catch (MalformedURLException e)
+-      {
+-         // shouldn't happen
+-         throw new IllegalStateException();
+-      }
+-   }
+-   
+-}
+diff --git a/src/main/java/org/jboss/net/protocol/http/DavURLLister.java b/src/main/java/org/jboss/net/protocol/http/DavURLLister.java
+deleted file mode 100644
+index c0a3022..0000000
+--- a/src/main/java/org/jboss/net/protocol/http/DavURLLister.java
++++ /dev/null
+@@ -1,115 +0,0 @@
+-/*
+-  * JBoss, Home of Professional Open Source
+-  * Copyright 2005, JBoss Inc., and individual contributors as indicated
+-  * by the @authors tag. See the copyright.txt in the distribution for a
+-  * full listing of individual contributors.
+-  *
+-  * This is free software; you can redistribute it and/or modify it
+-  * under the terms of the GNU Lesser General Public License as
+-  * published by the Free Software Foundation; either version 2.1 of
+-  * the License, or (at your option) any later version.
+-  *
+-  * This software is distributed in the hope that it will be useful,
+-  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+-  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+-  * Lesser General Public License for more details.
+-  *
+-  * You should have received a copy of the GNU Lesser General Public
+-  * License along with this software; if not, write to the Free
+-  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+-  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+-  */
+-package org.jboss.net.protocol.http;
+-
+-import java.io.IOException;
+-import java.net.MalformedURLException;
+-import java.net.URL;
+-import java.util.ArrayList;
+-import java.util.Collection;
+-import java.util.List;
+-
+-import org.apache.commons.httpclient.HttpException;
+-import org.apache.commons.httpclient.HttpURL;
+-import org.apache.webdav.lib.WebdavResource;
+-import org.jboss.net.protocol.URLListerBase;
+-
+-@SuppressWarnings("unchecked")
+-public class DavURLLister extends URLListerBase
+-{
+-   public Collection listMembers (URL baseUrl, URLFilter filter) throws IOException
+-   {
+-      return listMembers (baseUrl, filter, false);
+-   }
+-
+-   public Collection<URL> listMembers (URL baseUrl, URLFilter filter, boolean scanNonDottedSubDirs) throws IOException
+-   {
+-      WebdavResource resource = null;
+-      try
+-      {
+-         resource = new WebdavResource (baseUrl.toString ());
+-         WebdavResource[] resources = resource.listWebdavResources ();
+-         List<URL> urls = new ArrayList<URL>(resources.length);
+-         for (int i = 0; i < resources.length; i++)
+-         {
+-            WebdavResource member = resources[i];
+-            HttpURL httpURL = member.getHttpURL ();
+-            if (filter.accept (baseUrl, httpURL.getName ()))
+-            {
+-               String uri = httpURL.getURI();
+-               if (member.isCollection ())
+-               {
+-                  if (! uri.endsWith ("/"))
+-                     uri += "/";
+-
+-                  // it is a directory: do we have to recursively list its content?
+-                  String path = httpURL.getPath();
+-                  if (scanNonDottedSubDirs && getFilePartFromUrl(path).indexOf (".") == -1)
+-                  {
+-                     URL subUrl = new URL (uri) ;
+-                     urls.addAll (listMembers (subUrl, filter, scanNonDottedSubDirs));
+-                  }
+-                  else
+-                  {
+-                     urls.add (new URL (uri));
+-                  }
+-               }
+-               else
+-               {
+-                  urls.add (new URL (uri));
+-               }
+-               
+-            }
+-         }
+-         return urls;
+-      } catch (HttpException e)
+-      {
+-         throw new IOException (e.getMessage ());
+-      } catch (MalformedURLException e)
+-      {
+-         // should not happen
+-         throw new IllegalStateException (e.getMessage ());
+-      } finally
+-      {
+-         if (resource != null)
+-         {
+-            resource.close ();
+-         }
+-      }
+-   }
+-   
+-   protected static final String getFilePartFromUrl (String name)
+-   {
+-      int length = name.length ();
+-      
+-      if (name.charAt (length - 1) == '/')
+-      {
+-         int start = name.lastIndexOf ("/", length - 2);
+-         return name.substring (start, length -2);
+-      }
+-      else
+-      {
+-         int start = name.lastIndexOf ("/");
+-         return name.substring (start);         
+-      }
+-   }
+-}
+-- 
+1.9.3
+

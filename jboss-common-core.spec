@@ -3,22 +3,21 @@
 %global namedversion %{version}%{?namedreltag}
 
 Name:             jboss-common-core
-Version:          2.2.18
-Release:          10.0G%{?dist}
+Version:          2.2.22
+Release:          1.1
 Summary:          JBoss Common Classes
-
+Group:            Development/Java
 License:          LGPLv2+ and ASL 1.1
 URL:              http://www.jboss.org
 
-# svn export http://anonsvn.jboss.org/repos/common/common-core/tags/2.2.18.GA/ jboss-common-core-2.2.18.GA
-# tar cafJ jboss-common-core-2.2.18.GA.tar.xz jboss-common-core-2.2.18.GA
+# svn export http://anonsvn.jboss.org/repos/common/common-core/tags/2.2.22.GA/ jboss-common-core-2.2.22.GA
+# tar cafJ jboss-common-core-2.2.22.GA.tar.xz jboss-common-core-2.2.22.GA
 Source0:          %{name}-%{namedversion}.tar.xz
 # The URLLister* family of classes was removed because the apache-slide:webdavlib is a dead project and the classes aren't used in JBoss AS 7 at all. 
 Patch0:           %{name}-%{namedversion}-URLLister-removal.patch
 
 BuildArch:        noarch
 
-BuildRequires:    jpackage-utils
 BuildRequires:    java-devel
 BuildRequires:    maven-local
 BuildRequires:    maven-compiler-plugin
@@ -35,22 +34,17 @@ BuildRequires:    maven-ear-plugin
 BuildRequires:    maven-eclipse-plugin
 BuildRequires:    maven-ejb-plugin
 BuildRequires:    maven-surefire-plugin
-BuildRequires:    maven-surefire-provider-junit4
+BuildRequires:    maven-surefire-provider-junit
 BuildRequires:    jboss-parent
-BuildRequires:    junit4
+BuildRequires:    junit
 BuildRequires:    jboss-logging
-
-Requires:         jboss-logging
-Requires:         jpackage-utils
-Requires:         java
 
 %description
 JBoss Common Core Utility classes
 
 %package javadoc
 Summary:          Javadocs for %{name}
-
-Requires:         jpackage-utils
+Group:            Documentation
 
 %description javadoc
 This package contains the API documentation for %{name}.
@@ -65,33 +59,26 @@ rm -rf projectSet.psf .settings/ .project .classpath
 # Some failed tests
 # Failed tests: testJavaLangEditors(org.jboss.test.util.test.propertyeditor.PropertyEditorsUnitTestCase):
 #   PropertyEditor: org.jboss.util.propertyeditor.BooleanEditor, getAsText() == expectedStringOutput ' expected:<null> but was:<null>
-mvn-rpmbuild -Dmaven.test.skip=true install javadoc:aggregate
+%mvn_build -f
 
 %install
-# JAR
-install -d -m 755 $RPM_BUILD_ROOT%{_javadir}
-install -pm 644 target/%{name}-%{namedversion}.jar $RPM_BUILD_ROOT%{_javadir}/%{name}.jar
+%mvn_install
 
-# POM
-install -d -m 755 $RPM_BUILD_ROOT%{_mavenpomdir}
-install -pm 644 pom.xml $RPM_BUILD_ROOT%{_mavenpomdir}/JPP-%{name}.pom
+%files -f .mfiles
+%dir %{_javadir}/%{name}
 
-# DEPMAP
-%add_maven_depmap JPP-%{name}.pom %{name}.jar
-
-# APIDOCS
-install -d -m 755 $RPM_BUILD_ROOT%{_javadocdir}/%{name}
-cp -rp target/site/apidocs/* $RPM_BUILD_ROOT%{_javadocdir}/%{name}
-
-%files
-%{_mavenpomdir}/*
-%{_mavendepmapfragdir}/*
-%{_javadir}/*
-
-%files javadoc
-%{_javadocdir}/%{name}
+%files javadoc -f .mfiles-javadoc
 
 %changelog
+* Tue Jul 01 2014 Marek Goldmann <mgoldman@redhat.com> - 2.2.22-1
+- Upstream release 2.2.22.GA, upgrade to xmvn
+
+* Sat Jun 07 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.2.18-12
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_21_Mass_Rebuild
+
+* Fri Mar 28 2014 Michael Simacek <msimacek@redhat.com> - 2.2.18-11
+- Use Requires: java-headless rebuild (#1067528)
+
 * Sat Aug 03 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.2.18-10
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_20_Mass_Rebuild
 

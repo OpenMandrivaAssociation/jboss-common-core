@@ -31,7 +31,6 @@ BuildRequires:    maven-checkstyle-plugin
 BuildRequires:    maven-plugin-cobertura
 BuildRequires:    maven-dependency-plugin
 BuildRequires:    maven-ear-plugin
-BuildRequires:    maven-eclipse-plugin
 BuildRequires:    maven-ejb-plugin
 BuildRequires:    maven-surefire-plugin
 BuildRequires:    maven-surefire-provider-junit

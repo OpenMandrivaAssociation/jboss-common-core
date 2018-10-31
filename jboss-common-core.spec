@@ -4,7 +4,7 @@
 
 Name:             jboss-common-core
 Version:          2.2.22
-Release:          1.2
+Release:          1.3
 Summary:          JBoss Common Classes
 Group:            Development/Java
 License:          LGPLv2+ and ASL 1.1

@@ -8,7 +8,7 @@ Release:          1.3
 Summary:          JBoss Common Classes
 Group:            Development/Java
 License:          LGPLv2+ and ASL 1.1
-URL:              http://www.jboss.org
+URL:              https://www.jboss.org
 
 # svn export http://anonsvn.jboss.org/repos/common/common-core/tags/2.2.22.GA/ jboss-common-core-2.2.22.GA
 # tar cafJ jboss-common-core-2.2.22.GA.tar.xz jboss-common-core-2.2.22.GA
